@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-brand-navy: #071525;
+  --color-brand-navy-mid: #0D2137;
+  --color-brand-copper: #C65D2E;
+  --color-brand-copper-dark: #A64B24;
+  --color-brand-copper-light: #D97B50;
+  --color-brand-white: #FAF9F6;
+  --color-brand-white-dim: #F0EDE8;
+  --color-brand-light-bg: #F4F5F7;
+  --color-brand-muted: #64748B;
+
+  --color-background: var(--color-brand-white);
+  --color-foreground: var(--color-brand-navy);
+
+  --font-sans: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+:root {
+  --background: #FAF9F6;
+  --foreground: #071525;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(7, 21, 37, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(198, 93, 46, 0.4);
+}
+
+::selection {
+  background: rgba(198, 93, 46, 0.2);
+  color: #071525;
+}
+
+/* Shimmer animation */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2.5s infinite;
+}
+
