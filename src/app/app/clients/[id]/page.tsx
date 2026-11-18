@@ -61,6 +61,7 @@ export default function ClientDetailPage() {
     deals,
     financeAgreements,
     invoices,
+    emailMessages,
     generateSalesPlaybook,
     updateClient,
     deleteClient,
@@ -75,6 +76,7 @@ export default function ClientDetailPage() {
     | "prospects"
     | "finance"
     | "notes"
+    | "emails"
   >("overview");
 
   const [isGeneratingPlaybook, setIsGeneratingPlaybook] = useState(false);
@@ -149,6 +151,7 @@ export default function ClientDetailPage() {
   const clientAgreement = financeAgreements.find((a) => a.client_id === client.id);
   const clientInvoices = invoices.filter((i) => i.client_id === client.id);
   const clientNotes = internalNotes.filter((n) => n.client_id === client.id);
+  const clientEmails = emailMessages.filter((m) => m.client_id === client.id || m.recipient_company?.toLowerCase() === client.name.toLowerCase());
 
   // Client Playbook
   const currentPlaybook = client.sales_playbook;
@@ -230,6 +233,16 @@ export default function ClientDetailPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link href={`/app/email/compose?clientId=${client.id}&company=${encodeURIComponent(client.name)}`}>
+              <Button
+                variant="primary"
+                size="sm"
+                className="bg-[#C65D2E] hover:bg-[#b04f24]"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                Send Email
+              </Button>
+            </Link>
             <Button
               variant="outline"
               size="sm"
@@ -269,6 +282,7 @@ export default function ClientDetailPage() {
             { id: "campaigns", label: `Campaigns (${clientCampaigns.length})` },
             { id: "prospects", label: `Leads (${clientProspects.length})` },
             { id: "finance", label: "Retainer & Finance" },
+            { id: "emails", label: `Email History (${clientEmails.length})` },
             { id: "notes", label: `Internal Notes (${clientNotes.length})` },
           ].map((tab) => (
             <button
@@ -510,7 +524,7 @@ export default function ClientDetailPage() {
                           className="flex items-start gap-2 text-xs text-slate-700 p-2.5 bg-rose-50/40 border border-rose-100 rounded-xl"
                         >
                           <span className="w-4 h-4 rounded-full bg-rose-200 text-rose-800 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
-                            {i + 1}
+    {i + 1}
                           </span>
                           <span>{pain}</span>
                         </div>
@@ -526,7 +540,7 @@ export default function ClientDetailPage() {
                     </CardHeader>
                     <CardContent className="space-y-2">
                       {currentPlaybook.target_decision_makers?.map((dm, i) => (
-                        <div
+                                                <div
                           key={i}
                           className="flex items-center gap-2 text-xs text-slate-700 p-2.5 bg-blue-50/40 border border-blue-100 rounded-xl"
                         >
@@ -958,6 +972,75 @@ export default function ClientDetailPage() {
                   <p className="text-slate-600">{n.note}</p>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tab 9: Email History */}
+        {activeTab === "emails" && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <CardTitle className="text-base font-bold text-[#071525] flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-[#C65D2E]" />
+                  Client Email Communication Log
+                </CardTitle>
+                <p className="text-xs text-[#64748B] mt-0.5">
+                  All transactional and outbound emails dispatched to {client.name}
+                </p>
+              </div>
+              <Link href={`/app/email/compose?clientId=${client.id}&company=${encodeURIComponent(client.name)}`}>
+                <Button variant="primary" size="sm">
+                  <Send className="w-3.5 h-3.5 mr-1.5" />
+                  Compose New Email
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent className="p-0">
+              {clientEmails.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-500">
+                  <Mail className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="font-bold text-[#071525]">No emails dispatched to this client yet</p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Send kickoff messages, agreements, or weekly reports directly from LeadScorpio CRM.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {clientEmails.map((msg) => (
+                    <div key={msg.id} className="p-4 flex items-center justify-between hover:bg-slate-50/60 text-xs">
+                      <div className="space-y-1 min-w-0 pr-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[#071525]">{msg.subject}</span>
+                          <span className="text-[10px] px-2 py-0.2 rounded-full font-semibold bg-slate-100 text-slate-700">
+                            {msg.category}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 truncate">
+                          To: {msg.to_name || msg.to} &lt;{msg.to}&gt; • By: {msg.sender_name}
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                          msg.status === "DELIVERED"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : msg.status === "SENT"
+                            ? "bg-blue-100 text-blue-800"
+                            : msg.status === "FAILED"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-slate-100 text-slate-700"
+                        }`}>
+                          {msg.status}
+                        </span>
+                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                          {formatDate(msg.created_at)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

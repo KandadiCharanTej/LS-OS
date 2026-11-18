@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import {
   CreditCard,
   Plus,
@@ -20,6 +21,7 @@ import {
   CheckSquare,
   ShieldCheck,
   Edit3,
+  Mail,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
@@ -476,6 +478,14 @@ export default function FinancePage() {
                             <Send className="w-3 h-3 text-[#C65D2E]" />
                             Reminder ({agreement.reminders_sent_count})
                           </button>
+                          <Link
+                            href={`/app/email/compose?clientId=${agreement.client_id}&templateId=tpl-payment-reminder&company=${encodeURIComponent(agreement.client_name)}`}
+                            className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-[11px] font-semibold border border-amber-200 inline-flex items-center gap-1 transition-colors"
+                            title="Send Branded Email Reminder"
+                          >
+                            <Mail className="w-3 h-3 text-amber-600" />
+                            Email Reminder
+                          </Link>
                           <button
                             onClick={() => handleOpenEditAgreement(agreement)}
                             className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors"
@@ -566,6 +576,14 @@ export default function FinancePage() {
                       </td>
                       <td className="p-4 text-right">
                         <div className="inline-flex items-center gap-2">
+                          <Link
+                            href={`/app/email/compose?invoiceId=${inv.id}&to=${encodeURIComponent(inv.client_email || "")}&company=${encodeURIComponent(inv.client_name || "")}`}
+                            className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-[11px] font-semibold border border-blue-200 inline-flex items-center gap-1 transition-colors"
+                            title="Email Invoice to Client"
+                          >
+                            <Mail className="w-3 h-3 text-blue-600" />
+                            Email
+                          </Link>
                           <button
                             onClick={() => setViewingInvoice(inv)}
                             className="p-1.5 hover:bg-slate-100 rounded text-slate-600"

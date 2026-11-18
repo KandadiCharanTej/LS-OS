@@ -668,3 +668,107 @@ export interface ClientDocument {
   uploaded_by_name: string;
   created_at: string;
 }
+
+// ============================================================================
+// EMAIL CENTRE TYPES (Resend Integration & Email Operations)
+// ============================================================================
+
+export type EmailCategory = "TRANSACTIONAL" | "MARKETING";
+
+export type EmailStatus =
+  | "DRAFT"
+  | "QUEUED"
+  | "SENT"
+  | "DELIVERED"
+  | "BOUNCED"
+  | "FAILED";
+
+export type EmailTemplateCategory =
+  | "ONBOARDING"
+  | "SALES"
+  | "MEETINGS"
+  | "REPORTS"
+  | "FINANCE"
+  | "GENERAL";
+
+export interface EmailAttachment {
+  filename: string;
+  content?: string; // base64 or text
+  path?: string;
+  contentType?: string;
+  sizeBytes?: number;
+}
+
+export interface EmailMessage {
+  id: string;
+  resend_id?: string;
+  to: string;
+  to_name?: string;
+  recipient_company?: string;
+  client_id?: string;
+  client_name?: string;
+  prospect_id?: string;
+  prospect_name?: string;
+  sender_name: string;
+  sender_email: string;
+  reply_to?: string;
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  preview_text?: string;
+  html_content: string;
+  text_content?: string;
+  template_id?: string;
+  template_name?: string;
+  category: EmailCategory;
+  status: EmailStatus;
+  error_message?: string;
+  opened_at?: string;
+  clicked_at?: string;
+  created_at: string;
+  sent_at?: string;
+  delivered_at?: string;
+  attachments?: EmailAttachment[];
+}
+
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  category: EmailTemplateCategory;
+  subject: string;
+  preview_text: string;
+  html_content: string;
+  text_content: string;
+  is_custom: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmailEvent {
+  id: string;
+  email_id: string;
+  resend_id?: string;
+  event_type: "sent" | "delivered" | "bounced" | "complained" | "opened" | "clicked";
+  created_at: string;
+  metadata?: Record<string, any>;
+}
+
+export interface EmailSuppression {
+  id: string;
+  email: string;
+  reason: "UNSUBSCRIBE" | "BOUNCE" | "COMPLAINT";
+  created_at: string;
+}
+
+export interface EmailSettings {
+  provider: "resend";
+  api_key_configured: boolean;
+  sender_name: string;
+  sender_email: string;
+  reply_to: string;
+  default_footer: string;
+  is_sandbox_mode: boolean;
+  webhook_url?: string;
+  webhook_configured?: boolean;
+}
+

@@ -26,7 +26,13 @@ import {
   ResponseSentiment,
   InternalNote,
   ClientDocument,
+  EmailMessage,
+  EmailTemplate,
+  EmailEvent,
+  EmailSuppression,
+  EmailSettings,
 } from "@/types/crm";
+import { INITIAL_EMAIL_TEMPLATES } from "@/lib/email/templates";
 import {
   INITIAL_USERS,
   INITIAL_CLIENTS,
@@ -65,6 +71,11 @@ export interface CRMState {
   notifications: NotificationItem[];
   internalNotes: InternalNote[];
   documents: ClientDocument[];
+  emailMessages: EmailMessage[];
+  emailTemplates: EmailTemplate[];
+  emailEvents: EmailEvent[];
+  emailSuppressions: EmailSuppression[];
+  emailSettings: EmailSettings;
 }
 
 const STORAGE_KEY = "leadscorpio_crm_v3_clean_store";
@@ -216,6 +227,18 @@ function computeCampaignMetrics(campaign: Campaign, prospects: Prospect[]): Camp
   };
 }
 
+export const INITIAL_EMAIL_SETTINGS: EmailSettings = {
+  provider: "resend",
+  api_key_configured: true,
+  sender_name: "LeadScorpio",
+  sender_email: "onboarding@resend.dev",
+  reply_to: "leadscorpioofficial@gmail.com",
+  default_footer: "LeadScorpio • Turn Your Ideal Customers Into Qualified Sales Conversations.",
+  is_sandbox_mode: false,
+  webhook_url: "/api/email/webhook",
+  webhook_configured: true,
+};
+
 function getInitialState(): CRMState {
   if (typeof window !== "undefined") {
     try {
@@ -226,6 +249,13 @@ function getInitialState(): CRMState {
           parsed.campaigns = parsed.campaigns.map((c: Campaign) =>
             computeCampaignMetrics(c, parsed.prospects)
           );
+          if (!parsed.emailTemplates || parsed.emailTemplates.length === 0) {
+            parsed.emailTemplates = INITIAL_EMAIL_TEMPLATES;
+          }
+          if (!parsed.emailMessages) parsed.emailMessages = [];
+          if (!parsed.emailEvents) parsed.emailEvents = [];
+          if (!parsed.emailSuppressions) parsed.emailSuppressions = [];
+          if (!parsed.emailSettings) parsed.emailSettings = INITIAL_EMAIL_SETTINGS;
           return parsed;
         }
       }
@@ -258,6 +288,11 @@ function getInitialState(): CRMState {
     notifications: INITIAL_NOTIFICATIONS,
     internalNotes: INITIAL_INTERNAL_NOTES,
     documents: INITIAL_DOCUMENTS,
+    emailMessages: [],
+    emailTemplates: INITIAL_EMAIL_TEMPLATES,
+    emailEvents: [],
+    emailSuppressions: [],
+    emailSettings: INITIAL_EMAIL_SETTINGS,
   };
 }
 
@@ -319,6 +354,11 @@ export function useCRM() {
       notifications: INITIAL_NOTIFICATIONS,
       internalNotes: INITIAL_INTERNAL_NOTES,
       documents: INITIAL_DOCUMENTS,
+      emailMessages: [],
+      emailTemplates: INITIAL_EMAIL_TEMPLATES,
+      emailEvents: [],
+      emailSuppressions: [],
+      emailSettings: INITIAL_EMAIL_SETTINGS,
     };
     notify();
   };
@@ -1378,6 +1418,284 @@ export function useCRM() {
       notifications: [],
       internalNotes: [],
       documents: [],
+      emailMessages: [],
+      emailTemplates: INITIAL_EMAIL_TEMPLATES,
+      emailEvents: [],
+      emailSuppressions: [],
+      emailSettings: INITIAL_EMAIL_SETTINGS,
+    };
+    notify();
+  };
+
+  // ============================================================================
+  // EMAIL CENTRE STORE METHODS (Resend Integration & Email Operations)
+  // ============================================================================
+
+  const sendEmailAction = async (payload: Partial<EmailMessage>) => {
+    // 1. Suppression check for Marketing emails
+    if (payload.category === "MARKETING" && payload.to) {
+      const isSuppressed = globalState.emailSuppressions.some(
+        (s) => s.email.toLowerCase() === payload.to!.toLowerCase()
+      );
+      if (isSuppressed) {
+        throw new Error(
+          `Cannot send marketing email to ${payload.to}. This recipient is in the suppression list (unsubscribed or bounced).`
+        );
+      }
+    }
+
+    let isSuccess = false;
+    let resData: any = null;
+
+    try {
+      const res = await fetch("/api/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: payload.to,
+          to_name: payload.to_name,
+          subject: payload.subject,
+          html_content: payload.html_content,
+          text_content: payload.text_content,
+          sender_name: payload.sender_name || globalState.emailSettings.sender_name,
+          sender_email: payload.sender_email || globalState.emailSettings.sender_email,
+          reply_to: payload.reply_to || globalState.emailSettings.reply_to,
+          cc: payload.cc,
+          bcc: payload.bcc,
+          category: payload.category || "TRANSACTIONAL",
+          attachments: payload.attachments,
+          client_id: payload.client_id,
+          prospect_id: payload.prospect_id,
+          template_id: payload.template_id,
+          template_name: payload.template_name,
+        }),
+      });
+
+      resData = await res.json().catch(() => ({}));
+      isSuccess = res.ok && resData.success;
+    } catch (err: any) {
+      console.error("[sendEmailAction Error]:", err);
+      resData = { error: err.message || "Network error while sending email" };
+      isSuccess = false;
+    }
+
+    const newMsg: EmailMessage = {
+      id: `email-${Date.now()}`,
+      resend_id: resData?.resend_id,
+      to: payload.to || "",
+      to_name: payload.to_name || "",
+      recipient_company: payload.recipient_company || "",
+      client_id: payload.client_id,
+      client_name: payload.client_name,
+      prospect_id: payload.prospect_id,
+      prospect_name: payload.prospect_name,
+      sender_name: payload.sender_name || globalState.emailSettings.sender_name,
+      sender_email: payload.sender_email || globalState.emailSettings.sender_email,
+      reply_to: payload.reply_to || globalState.emailSettings.reply_to,
+      cc: payload.cc,
+      bcc: payload.bcc,
+      subject: payload.subject || "No Subject",
+      preview_text: payload.preview_text || "",
+      html_content: payload.html_content || "",
+      text_content: payload.text_content || "",
+      template_id: payload.template_id,
+      template_name: payload.template_name,
+      category: payload.category || "TRANSACTIONAL",
+      status: isSuccess ? "SENT" : "FAILED",
+      error_message: isSuccess ? undefined : resData?.error,
+      created_at: new Date().toISOString(),
+      sent_at: isSuccess ? new Date().toISOString() : undefined,
+      attachments: payload.attachments,
+    };
+
+    // Record activity in prospect timeline if associated
+    const newActivities = [...globalState.activities];
+    if (payload.prospect_id) {
+      newActivities.unshift({
+        id: `act-email-${Date.now()}`,
+        prospect_id: payload.prospect_id,
+        prospect_name: payload.prospect_name || payload.to_name,
+        user_name: globalState.currentUser.full_name,
+        activity_type: "MESSAGE_SENT",
+        notes: `Sent email via Resend: "${payload.subject}" [Status: ${newMsg.status}]`,
+        created_at: new Date().toISOString(),
+      });
+    }
+
+    // In-app Notification
+    const newNotifications = [...globalState.notifications];
+    newNotifications.unshift({
+      id: `notif-email-${Date.now()}`,
+      user_id: globalState.currentUser.id,
+      title: isSuccess ? "Email Dispatched" : "Email Failed",
+      message: isSuccess
+        ? `"${payload.subject}" sent to ${payload.to}`
+        : `Failed to send to ${payload.to}: ${resData?.error}`,
+      type: "SYSTEM",
+      link_url: "/app/email/history",
+      is_read: false,
+      created_at: new Date().toISOString(),
+    });
+
+    globalState = {
+      ...globalState,
+      emailMessages: [newMsg, ...globalState.emailMessages],
+      activities: newActivities,
+      notifications: newNotifications,
+    };
+    notify();
+
+    return {
+      success: isSuccess,
+      email: newMsg,
+      resend_id: resData?.resend_id,
+      error: resData?.error,
+    };
+  };
+
+  const saveDraftEmail = (payload: Partial<EmailMessage>) => {
+    const draftMsg: EmailMessage = {
+      id: payload.id || `draft-${Date.now()}`,
+      to: payload.to || "",
+      to_name: payload.to_name || "",
+      recipient_company: payload.recipient_company || "",
+      client_id: payload.client_id,
+      client_name: payload.client_name,
+      prospect_id: payload.prospect_id,
+      prospect_name: payload.prospect_name,
+      sender_name: payload.sender_name || globalState.emailSettings.sender_name,
+      sender_email: payload.sender_email || globalState.emailSettings.sender_email,
+      reply_to: payload.reply_to || globalState.emailSettings.reply_to,
+      cc: payload.cc,
+      bcc: payload.bcc,
+      subject: payload.subject || "Draft Email",
+      preview_text: payload.preview_text || "",
+      html_content: payload.html_content || "",
+      text_content: payload.text_content || "",
+      template_id: payload.template_id,
+      template_name: payload.template_name,
+      category: payload.category || "TRANSACTIONAL",
+      status: "DRAFT",
+      created_at: payload.created_at || new Date().toISOString(),
+      attachments: payload.attachments,
+    };
+
+    const existingIndex = globalState.emailMessages.findIndex((m) => m.id === draftMsg.id);
+    let updatedList: EmailMessage[];
+    if (existingIndex >= 0) {
+      updatedList = globalState.emailMessages.map((m) => (m.id === draftMsg.id ? draftMsg : m));
+    } else {
+      updatedList = [draftMsg, ...globalState.emailMessages];
+    }
+
+    globalState = {
+      ...globalState,
+      emailMessages: updatedList,
+    };
+    notify();
+    return draftMsg;
+  };
+
+  const deleteEmailMessage = (id: string) => {
+    globalState = {
+      ...globalState,
+      emailMessages: globalState.emailMessages.filter((m) => m.id !== id),
+    };
+    notify();
+  };
+
+  const addEmailTemplate = (tplData: Partial<EmailTemplate>) => {
+    const newTpl: EmailTemplate = {
+      id: `tpl-custom-${Date.now()}`,
+      name: tplData.name || "Custom Template",
+      category: tplData.category || "GENERAL",
+      subject: tplData.subject || "Subject line",
+      preview_text: tplData.preview_text || "",
+      html_content: tplData.html_content || "<p>Hello {{first_name}},</p>",
+      text_content: tplData.text_content || "Hello {{first_name}},",
+      is_custom: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    globalState = {
+      ...globalState,
+      emailTemplates: [newTpl, ...globalState.emailTemplates],
+    };
+    notify();
+    return newTpl;
+  };
+
+  const updateEmailTemplate = (id: string, updates: Partial<EmailTemplate>) => {
+    globalState = {
+      ...globalState,
+      emailTemplates: globalState.emailTemplates.map((t) =>
+        t.id === id ? { ...t, ...updates, updated_at: new Date().toISOString() } : t
+      ),
+    };
+    notify();
+  };
+
+  const deleteEmailTemplate = (id: string) => {
+    globalState = {
+      ...globalState,
+      emailTemplates: globalState.emailTemplates.filter((t) => t.id !== id),
+    };
+    notify();
+  };
+
+  const duplicateEmailTemplate = (id: string) => {
+    const orig = globalState.emailTemplates.find((t) => t.id === id);
+    if (!orig) return;
+
+    const dup: EmailTemplate = {
+      ...orig,
+      id: `tpl-${Date.now()}`,
+      name: `${orig.name} (Copy)`,
+      is_custom: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    globalState = {
+      ...globalState,
+      emailTemplates: [dup, ...globalState.emailTemplates],
+    };
+    notify();
+    return dup;
+  };
+
+  const addSuppression = (email: string, reason: "UNSUBSCRIBE" | "BOUNCE" | "COMPLAINT" = "UNSUBSCRIBE") => {
+    if (!email || !email.includes("@")) return;
+    const exists = globalState.emailSuppressions.some((s) => s.email.toLowerCase() === email.toLowerCase());
+    if (exists) return;
+
+    const newSup: EmailSuppression = {
+      id: `sup-${Date.now()}`,
+      email: email.trim().toLowerCase(),
+      reason,
+      created_at: new Date().toISOString(),
+    };
+
+    globalState = {
+      ...globalState,
+      emailSuppressions: [newSup, ...globalState.emailSuppressions],
+    };
+    notify();
+  };
+
+  const removeSuppression = (id: string) => {
+    globalState = {
+      ...globalState,
+      emailSuppressions: globalState.emailSuppressions.filter((s) => s.id !== id),
+    };
+    notify();
+  };
+
+  const updateEmailSettings = (updates: Partial<EmailSettings>) => {
+    globalState = {
+      ...globalState,
+      emailSettings: { ...globalState.emailSettings, ...updates },
     };
     notify();
   };
@@ -1402,6 +1720,11 @@ export function useCRM() {
     notifications: state.notifications,
     internalNotes: state.internalNotes,
     documents: state.documents,
+    emailMessages: state.emailMessages,
+    emailTemplates: state.emailTemplates,
+    emailEvents: state.emailEvents,
+    emailSuppressions: state.emailSuppressions,
+    emailSettings: state.emailSettings,
 
     // Methods
     setCurrentUser,
@@ -1453,5 +1776,16 @@ export function useCRM() {
     updateClientRequestStatus,
     markNotificationRead,
     markAllNotificationsRead,
+    sendEmailAction,
+    sendEmail: sendEmailAction,
+    saveDraftEmail,
+    deleteEmailMessage,
+    addEmailTemplate,
+    updateEmailTemplate,
+    deleteEmailTemplate,
+    duplicateEmailTemplate,
+    addSuppression,
+    removeSuppression,
+    updateEmailSettings,
   };
 }

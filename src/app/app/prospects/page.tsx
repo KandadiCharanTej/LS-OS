@@ -781,6 +781,15 @@ export default function ProspectsPage() {
                           </td>
                           <td className="p-4 text-right">
                             <div className="inline-flex items-center gap-1.5">
+                              {/* Send Email Quick Link */}
+                              <Link
+                                href={`/app/email/compose?prospectId=${prospect.id}&to=${encodeURIComponent(prospect.work_email || prospect.email || "")}&name=${encodeURIComponent(prospect.full_name)}&company=${encodeURIComponent(prospect.company)}`}
+                                title="Send Branded Email"
+                                className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-[11px] font-semibold border border-blue-200 inline-flex items-center gap-1 transition-colors"
+                              >
+                                <Mail className="w-3 h-3 text-blue-600" />
+                                Email
+                              </Link>
                               {/* Convert to Deal Quick Button */}
                               <button
                                 onClick={() => handleOpenConvertToDeal(prospect)}
@@ -908,6 +917,14 @@ export default function ProspectsPage() {
                               ))}
                             </select>
 
+                            <Link
+                              href={`/app/email/compose?prospectId=${lead.id}&to=${encodeURIComponent(lead.work_email || lead.email || "")}&name=${encodeURIComponent(lead.full_name)}&company=${encodeURIComponent(lead.company)}`}
+                              title="Email Lead"
+                              className="px-1.5 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-[10px] font-bold border border-blue-200 shrink-0 inline-flex items-center gap-0.5"
+                            >
+                              <Mail className="w-2.5 h-2.5 text-blue-600" />
+                              Email
+                            </Link>
                             <button
                               onClick={() => handleOpenConvertToDeal(lead)}
                               title="Convert to Deal"

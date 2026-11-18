@@ -23,6 +23,7 @@ import {
   ExternalLink,
   TrendingUp,
   CreditCard,
+  Mail,
 } from "lucide-react";
 import { useCRM } from "@/lib/store/crm-store";
 import { RoleSwitcher } from "./RoleSwitcher";
@@ -48,6 +49,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     { label: "Campaigns", href: "/app/campaigns", icon: Send },
     { label: "Sales & Deals", href: "/app/deals", icon: TrendingUp, badge: openDealsCount > 0 ? openDealsCount : undefined },
     { label: "Inbox", href: "/app/inbox", icon: Inbox },
+    { label: "Email Centre", href: "/app/email", icon: Mail },
     {
       label: "Tasks",
       href: "/app/tasks",

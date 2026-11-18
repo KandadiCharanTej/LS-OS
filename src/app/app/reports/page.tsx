@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import {
   BarChart3,
   Download,
@@ -17,6 +18,7 @@ import {
   AlertCircle,
   Clock,
   Sparkles,
+  Mail,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
@@ -364,15 +366,25 @@ export default function ReportsPage() {
                     </div>
 
                     <div className="pt-2 flex items-center justify-between border-t border-slate-100">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedReportForView(report)}
-                        className="text-xs text-[#071525] font-semibold"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        View Dossier
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedReportForView(report)}
+                          className="text-xs text-[#071525] font-semibold"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          View Dossier
+                        </Button>
+                        <Link
+                          href={`/app/email/compose?clientId=${report.client_id}&templateId=tpl-weekly-report&company=${encodeURIComponent(report.client_name)}`}
+                          className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200 inline-flex items-center gap-1 transition-colors"
+                          title="Email Approved Weekly Report to Client"
+                        >
+                          <Mail className="w-3 h-3 text-blue-600" />
+                          Email
+                        </Link>
+                      </div>
 
                       <button
                         onClick={() => toggleShareWeeklyReport(report.id)}
