@@ -103,7 +103,7 @@ export default function EmailSettingsPage() {
       if (res.ok && data.success) {
         setTestResult({
           success: true,
-          message: data.message || `Test email dispatched to ${testEmailRecipient} via Resend!`,
+          message: data.message || `Test email dispatched to ${testEmailRecipient} via ${data.provider === 'gmail_smtp' ? 'Gmail SMTP' : 'Resend'}!`,
         });
       } else {
         setTestResult({
@@ -146,14 +146,24 @@ export default function EmailSettingsPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-white">Resend Email Delivery Engine</h3>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                  <h3 className="text-base font-bold text-white">Dual-Provider Email Engine</h3>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                    serverStatus?.active_provider === "gmail_smtp"
+                      ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
+                      : serverStatus?.active_provider === "resend"
+                        ? "bg-blue-500/20 text-blue-300 border border-blue-400/30"
+                        : "bg-amber-500/20 text-amber-300 border border-amber-400/30"
+                  }`}>
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    Connected
+                    {serverStatus?.active_provider === "gmail_smtp"
+                      ? "Gmail SMTP Active"
+                      : serverStatus?.active_provider === "resend"
+                        ? "Resend Fallback"
+                        : "Not Configured"}
                   </span>
                 </div>
                 <p className="text-xs text-slate-300 mt-0.5">
-                  Official Resend Node.js SDK Integration Active
+                  Gmail SMTP (Primary) → Resend API (Fallback)
                 </p>
               </div>
             </div>
@@ -179,7 +189,21 @@ export default function EmailSettingsPage() {
           </div>
 
           <CardContent className="p-5 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                <span className="text-[#64748B] block mb-1">SMTP Provider:</span>
+                <div className="font-bold text-[#071525]">Gmail SMTP (Primary)</div>
+                {serverStatus?.smtp_configured !== false ? (
+                  <span className="text-[10px] text-emerald-600 font-semibold mt-1 block">
+                    ✓ leadscorpi...@gmail.com
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-amber-600 font-semibold mt-1 block">
+                    Not configured
+                  </span>
+                )}
+              </div>
+
               <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                 <span className="text-[#64748B] block mb-1">API Key Configuration:</span>
                 <div className="font-mono font-bold text-[#071525]">
@@ -254,7 +278,7 @@ export default function EmailSettingsPage() {
                       className="w-full text-xs rounded-xl border border-slate-200 p-2.5 font-mono"
                     />
                     <p className="text-[11px] text-[#64748B] mt-1">
-                      Use <span className="font-mono font-bold">onboarding@resend.dev</span> for testing, or your verified domain (e.g. <span className="font-mono">outbound@leadscorpio.com</span>).
+                      Use <span className="font-mono font-bold">onboarding@resend.dev</span> for Resend sandbox testing, or your verified domain (e.g. <span className="font-mono">outbound@leadscorpio.com</span>). Gmail SMTP uses the configured SMTP_USER address for sending.
                     </p>
                   </div>
 
@@ -337,12 +361,12 @@ export default function EmailSettingsPage() {
                   {isSendingTest ? (
                     <span className="flex items-center gap-2">
                       <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Dispatching via Resend...
+                      Sending...
                     </span>
                   ) : (
                     <span className="flex items-center gap-1.5">
                       <Send className="w-3.5 h-3.5" />
-                      Send Live Test Email
+                      Send Test Email
                     </span>
                   )}
                 </Button>

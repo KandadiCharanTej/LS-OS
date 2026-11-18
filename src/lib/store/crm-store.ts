@@ -228,7 +228,7 @@ function computeCampaignMetrics(campaign: Campaign, prospects: Prospect[]): Camp
 }
 
 export const INITIAL_EMAIL_SETTINGS: EmailSettings = {
-  provider: "resend",
+  provider: "dual",
   api_key_configured: true,
   sender_name: "LeadScorpio",
   sender_email: "onboarding@resend.dev",
@@ -1481,7 +1481,8 @@ export function useCRM() {
 
     const newMsg: EmailMessage = {
       id: `email-${Date.now()}`,
-      resend_id: resData?.resend_id,
+      resend_id: resData?.resend_id || resData?.message_id,
+      provider: resData?.provider || "unknown",
       to: payload.to || "",
       to_name: payload.to_name || "",
       recipient_company: payload.recipient_company || "",
@@ -1517,7 +1518,7 @@ export function useCRM() {
         prospect_name: payload.prospect_name || payload.to_name,
         user_name: globalState.currentUser.full_name,
         activity_type: "MESSAGE_SENT",
-        notes: `Sent email via Resend: "${payload.subject}" [Status: ${newMsg.status}]`,
+        notes: `Sent email via ${newMsg.provider === "gmail_smtp" ? "Gmail SMTP" : "Resend"}: "${payload.subject}" [Status: ${newMsg.status}]`,
         created_at: new Date().toISOString(),
       });
     }
@@ -1529,7 +1530,7 @@ export function useCRM() {
       user_id: globalState.currentUser.id,
       title: isSuccess ? "Email Dispatched" : "Email Failed",
       message: isSuccess
-        ? `"${payload.subject}" sent to ${payload.to}`
+        ? `"${payload.subject}" sent to ${payload.to} (${newMsg.provider === "gmail_smtp" ? "Gmail SMTP" : "Resend"})`
         : `Failed to send to ${payload.to}: ${resData?.error}`,
       type: "SYSTEM",
       link_url: "/app/email/history",
@@ -1548,7 +1549,9 @@ export function useCRM() {
     return {
       success: isSuccess,
       email: newMsg,
-      resend_id: resData?.resend_id,
+      provider: newMsg.provider,
+      resend_id: newMsg.resend_id,
+      message_id: resData?.message_id,
       error: resData?.error,
     };
   };

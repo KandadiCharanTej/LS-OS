@@ -262,10 +262,11 @@ function ComposeEmailContent() {
       });
 
       if (!result.success) {
-        setSendError(result.error || "Failed to dispatch email through Resend.");
+        setSendError(result.error || "Failed to dispatch email.");
       } else {
+        const providerLabel = result.provider === "gmail_smtp" ? "Gmail SMTP (Primary)" : "Resend (Fallback)";
         setSendSuccessMessage(
-          `Email sent successfully via Resend! (Message ID: ${result.resend_id || "resend-ok"})`
+          `Email sent successfully via ${providerLabel}! (ID: ${result.resend_id || result.message_id || "sent-ok"})`
         );
         setTimeout(() => {
           setIsReviewModalOpen(false);
@@ -728,7 +729,7 @@ function ComposeEmailContent() {
         >
           <div className="space-y-4">
             <p className="text-xs text-[#64748B]">
-              Please review all outbound details before final sending. This email will be sent via Resend API to the recipient inbox.
+              Please review all outbound details before final sending. This email will be dispatched via your active provider pipeline (Gmail SMTP Primary → Resend Fallback).
             </p>
 
             <div className="bg-[#FAF9F6] border border-[#071525]/10 rounded-xl p-3.5 space-y-2 text-xs">
@@ -743,6 +744,10 @@ function ComposeEmailContent() {
               <div className="flex justify-between">
                 <span className="text-[#64748B]">Sender Identity:</span>
                 <span className="text-[#071525]">{senderName} &lt;{senderEmail}&gt;</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#64748B]">Delivery Route:</span>
+                <span className="font-semibold text-[#071525]">Gmail SMTP (Primary) → Resend (Fallback)</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#64748B]">Reply-To:</span>
@@ -792,7 +797,7 @@ function ComposeEmailContent() {
                 {isSending ? (
                   <span className="flex items-center gap-2">
                     <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Sending via Resend...
+                    Dispatching Email...
                   </span>
                 ) : (
                   <span className="flex items-center gap-1.5">

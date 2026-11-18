@@ -702,6 +702,7 @@ export interface EmailAttachment {
 export interface EmailMessage {
   id: string;
   resend_id?: string;
+  provider?: "gmail_smtp" | "resend" | "unknown";
   to: string;
   to_name?: string;
   recipient_company?: string;
@@ -761,7 +762,7 @@ export interface EmailSuppression {
 }
 
 export interface EmailSettings {
-  provider: "resend";
+  provider: "resend" | "gmail_smtp" | "dual";
   api_key_configured: boolean;
   sender_name: string;
   sender_email: string;
@@ -770,5 +771,8 @@ export interface EmailSettings {
   is_sandbox_mode: boolean;
   webhook_url?: string;
   webhook_configured?: boolean;
+  smtp_configured?: boolean;
+  active_provider?: "gmail_smtp" | "resend" | "none";
+  smtp_user?: string;
 }
 

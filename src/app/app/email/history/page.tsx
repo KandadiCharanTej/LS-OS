@@ -160,6 +160,7 @@ export default function EmailHistoryPage() {
                       <th className="py-3 px-4">Subject</th>
                       <th className="py-3 px-4">Association</th>
                       <th className="py-3 px-4">Category</th>
+                      <th className="py-3 px-4">Provider</th>
                       <th className="py-3 px-4">Status</th>
                       <th className="py-3 px-4">Timestamp</th>
                       <th className="py-3 px-4 text-right">Actions</th>
@@ -221,6 +222,21 @@ export default function EmailHistoryPage() {
                             }`}
                           >
                             {msg.category}
+                          </span>
+                        </td>
+
+                        {/* Provider */}
+                        <td className="py-3 px-4">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                              msg.provider === "gmail_smtp"
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                : msg.provider === "resend"
+                                ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                : "bg-slate-100 text-slate-600 border border-slate-200"
+                            }`}
+                          >
+                            {msg.provider === "gmail_smtp" ? "Gmail SMTP" : msg.provider === "resend" ? "Resend" : "Simulated"}
                           </span>
                         </td>
 
@@ -323,9 +339,36 @@ export default function EmailHistoryPage() {
                     <span className="font-bold text-[#071525]">{viewingEmail.status}</span>
                   </div>
                   <div>
-                    <span className="text-[#64748B]">Resend ID:</span>{" "}
+                    <span className="text-[#64748B]">Provider Used:</span>{" "}
+                    <span
+                      className={`font-semibold text-[11px] px-2 py-0.5 rounded ${
+                        viewingEmail.provider === "gmail_smtp"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : viewingEmail.provider === "resend"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-slate-100 text-slate-800"
+                      }`}
+                    >
+                      {viewingEmail.provider === "gmail_smtp"
+                        ? "Gmail SMTP (Primary)"
+                        : viewingEmail.provider === "resend"
+                        ? "Resend (Fallback)"
+                        : "Simulated"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-[#64748B]">Message / Resend ID:</span>{" "}
                     <span className="font-mono text-[11px] text-slate-700 bg-slate-200 px-1.5 py-0.5 rounded">
-                      {viewingEmail.resend_id || "resend-simulated"}
+                      {viewingEmail.resend_id || "N/A"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[#64748B]">Dispatched At:</span>{" "}
+                    <span className="text-[#071525]">
+                      {viewingEmail.sent_at ? new Date(viewingEmail.sent_at).toLocaleString() : "Pending"}
                     </span>
                   </div>
                 </div>

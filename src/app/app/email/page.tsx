@@ -152,7 +152,7 @@ export default function EmailDashboardPage() {
                 <Send className="w-4 h-4 text-[#C65D2E]" />
               </div>
               <div className="text-2xl font-bold text-[#071525] mt-2">{totalSent}</div>
-              <p className="text-[11px] text-[#94A3B8] mt-1 font-mono">Dispatched via Resend</p>
+              <p className="text-[11px] text-[#94A3B8] mt-1 font-mono">Gmail SMTP • Resend</p>
             </CardContent>
           </Card>
 
@@ -334,7 +334,7 @@ export default function EmailDashboardPage() {
                 <Clock className="w-4 h-4 text-[#C65D2E]" />
                 Recent Outbound Activity
               </CardTitle>
-              <p className="text-xs text-[#64748B] mt-0.5">Most recent emails dispatched through Resend</p>
+              <p className="text-xs text-[#64748B] mt-0.5">Most recent emails dispatched across primary and fallback providers</p>
             </div>
             <Link href="/app/email/history" className="text-xs font-semibold text-[#C65D2E] hover:underline">
               View Complete History ({emailMessages.length})
